@@ -13,4 +13,7 @@
  
  Finally, you can use the fine-tuned GPT-2 model to generate recipe ingredients from a recipe title.
  
+To check coding view  [here](coding)
+ 
+ 
  
