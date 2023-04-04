@@ -1,0 +1,62 @@
+First, you will need to install the necessary libraries, including PyTorch and transformers. You can install these libraries using the following command in your terminal:
+
+pip install torch transformers
+
+
+Next, you need to load the pre-trained GPT-2 model and tokenizer from the transformers library. Here is some example code to do that:
+
+from transformers import GPT2LMHeadModel, GPT2Tokenizer
+model_name = 'gpt2-medium'  # Pretrained GPT-2 model size
+tokenizer = GPT2Tokenizer.from_pretrained(model_name)
+model = GPT2LMHeadModel.from_pretrained(model_name)
+
+
+Next, you need to load your recipe dataset and preprocess it into a format that can be used for fine-tuning the GPT-2 model. In this case, you will need to provide the recipe title as the input to the model, and the recipe ingredients as the output. Here is some example code to preprocess the data:
+
+import pandas as pd
+df = pd.read_csv('recipe_data.csv')  # Load recipe data into a pandas dataframe
+
+# Preprocess recipe data into input-output pairs
+input_texts = df['title'].tolist()
+output_texts = df['ingredients'].tolist()
+
+# Tokenize input-output pairs using GPT-2 tokenizer
+input_ids = tokenizer.batch_encode_plus(input_texts, pad_to_max_length=True, return_tensors='pt')['input_ids']
+output_ids = tokenizer.batch_encode_plus(output_texts, pad_to_max_length=True, return_tensors='pt')['input_ids']
+
+
+After loading and preprocessing the data, you can fine-tune the GPT-2 model using the input-output pairs. Here is some example code to fine-tune the model:
+
+from torch.utils.data import TensorDataset, DataLoader, RandomSampler
+
+# Convert input-output pairs into a PyTorch dataset
+dataset = TensorDataset(input_ids, output_ids)
+
+# Set up training parameters
+batch_size = 4
+epochs = 3
+learning_rate = 5e-5
+
+# Set up data loader for batch processing
+dataloader = DataLoader(dataset, sampler=RandomSampler(dataset), batch_size=batch_size)
+
+# Set up optimizer and training loop
+optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+
+for epoch in range(epochs):
+    for batch in dataloader:
+        model.train()
+        batch_input_ids, batch_output_ids = batch
+        optimizer.zero_grad()
+        loss, logits, _ = model(batch_input_ids, labels=batch_output_ids)
+        loss.backward()
+        optimizer.step()
+
+
+Finally, you can use the fine-tuned GPT-2 model to generate recipe ingredients from a recipe title. Here is some example code to generate recipe ingredients:
+
+# Generate recipe ingredients using fine-tuned GPT-2 model
+generated = model.generate(input_ids, max_length=50, num_beams=5, no_repeat_ngram_size=2, early_stopping=True)
+
+# Decode generated recipe ingredients from token IDs back to text
+generated_texts = tokenizer.batch_decode(generated, skip_special_tokens=True)
